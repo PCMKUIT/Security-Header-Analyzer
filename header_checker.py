@@ -21,56 +21,188 @@ import os
 import re
 from urllib.parse import urlparse
 
-
 import requests
-
-
 
 
 BASELINE_PATH = os.path.join("tools", "baseline_headers.json")
 
 
-
-
 def load_baseline(path=BASELINE_PATH):
-with open(path, "r", encoding="utf-8") as f:
-return json.load(f)
-
-
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def normalize_header_name(name):
-return "-".join([p.capitalize() for p in name.split("-")])
-
-
+    return "-".join([p.capitalize() for p in name.split("-")])
 
 
 def check_hsts(value, rule):
-# Example: 'max-age=31536000; includeSubDomains; preload'
-try:
-max_age = 0
-include_sub = False
-parts = [p.strip() for p in value.split(";")]
-for p in parts:
-if p.startswith("max-age"):
-m = re.search(r"max-age=(\d+)", p)
-if m:
-max_age = int(m.group(1))
-if p.lower() == "includesubdomains":
-include_sub = True
-return max_age >= rule.get("min_max_age", 0) and ((not rule.get("require_include_subdomains")) or include_sub)
-except Exception:
-return False
-
-
+    # Example: 'max-age=31536000; includeSubDomains; preload'
+    try:
+        max_age = 0
+        include_sub = False
+        parts = [p.strip() for p in value.split(";")]
+        for p in parts:
+            if p.startswith("max-age"):
+                m = re.search(r"max-age=(\d+)", p)
+                if m:
+                    max_age = int(m.group(1))
+            if p.lower() == "includesubdomains":
+                include_sub = True
+        return max_age >= rule.get("min_max_age", 0) and ((not rule.get("require_include_subdomains")) or include_sub)
+    except Exception:
+        return False
 
 
 def check_allowed(value, rule):
-allowed = rule.get("allowed_values")
-return any(value.strip().startswith(a) for a in allowed) if allowed else True
-
-
+    allowed = rule.get("allowed_values")
+    return any(value.strip().startswith(a) for a in allowed) if allowed else True
 
 
 def check_set_cookie(headers, rule):
-ok, data, status = fetch_header
+    cookies = headers.get("Set-Cookie")
+    if not cookies:
+        return False, "No Set-Cookie headers"
+    # Requests combines Set-Cookie into a single header string in some cases; handle simple checks
+    flags = rule.get("required_flags", [])
+    require_samesite = rule.get("require_samesite", False)
+    issues = []
+    # Split into individual cookie strings
+    cookie_list = []
+    if isinstance(cookies, list):
+        cookie_list = cookies
+    else:
+        cookie_list = [cookies]
+    for c in cookie_list:
+        for f in flags:
+            if f not in c:
+                issues.append(f"Missing flag {f} in cookie: {c[:60]}")
+        if require_samesite and "SameSite" not in c:
+            issues.append(f"Missing SameSite in cookie: {c[:60]}")
+    return len(issues) == 0, "; ".join(issues)
+
+
+def evaluate_headers(resp_headers, baseline):
+    findings = []
+    for name, rule in baseline.items():
+        n = normalize_header_name(name)
+        value = resp_headers.get(n)
+        if rule.get("required") and not value:
+            findings.append(("missing", n, "Header is missing"))
+            continue
+        if name.lower() == "strict-transport-security":
+            ok = check_hsts(value or "", rule)
+            if not ok:
+                findings.append(("weak", n, f"HSTS value weak or missing details: {value}"))
+        elif name.lower() == "x-frame-options":
+            if value and not check_allowed(value, rule):
+                findings.append(("weak", n, f"X-Frame-Options value not allowed: {value}"))
+        elif name.lower() == "x-content-type-options":
+            if value and not check_allowed(value, rule):
+                findings.append(("weak", n, f"X-Content-Type-Options value not allowed: {value}"))
+        elif name.lower() == "referrer-policy":
+            if value and not check_allowed(value, rule):
+                findings.append(("weak", n, f"Referrer-Policy value not allowed: {value}"))
+        elif name.lower() == "set-cookie":
+            ok, msg = check_set_cookie(resp_headers, rule)
+            if not ok:
+                findings.append(("weak", n, msg))
+        else:
+            # For other optional headers like CSP/Permissions-Policy, just warn if missing
+            if rule.get("required") and not value:
+                findings.append(("missing", n, "Header is missing"))
+    return findings
+
+
+def fetch_headers(url, timeout=10):
+    try:
+        r = requests.get(url, timeout=timeout, allow_redirects=True)
+        # Normalize header names to Capital-Case-Style
+        headers = {}
+        for k, v in r.headers.items():
+            headers[normalize_header_name(k)] = v
+        return True, headers, r.status_code
+    except Exception as e:
+        return False, str(e), None
+
+
+def make_report(results, output_path, summary=None):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("# Header Audit Report\n\n")
+        f.write(f"Generated by Security Header Analyzer\n\n")
+        if summary:
+            f.write("## Summary\n\n")
+            for k, v in summary.items():
+                f.write(f"- **{k}**: {v}\n")
+            f.write("\n")
+        for res in results:
+            url = res["url"]
+            f.write(f"---\n\n## {url}\n\n")
+            if not res.get("ok"):
+                f.write(f"**Fetch error:** {res.get('error')}\n\n")
+                continue
+            f.write(f"- HTTP status: {res.get('status')}\n")
+            f.write("- Findings:\n")
+            if not res.get("findings"):
+                f.write("  - None — good baseline coverage.\n\n")
+            else:
+                for t, h, m in res.get("findings"):
+                    f.write(f"  - **{t.upper()}** | `{h}` — {m}\n")
+                f.write("\n")
+            f.write("- Response headers snapshot:\n")
+            f.write("\n```")
+            for hk, hv in res.get("headers", {}).items():
+                f.write(f"{hk}: {hv}\n")
+            f.write("```)\n\n")
+    print(f"Report written to {output_path}")
+
+
+def aggregate_summary(results):
+    counts = {"checked": 0, "missing": 0, "weak": 0, "errors": 0}
+    for r in results:
+        counts["checked"] += 1
+        if not r.get("ok"):
+            counts["errors"] += 1
+            continue
+        for t, _, _ in r.get("findings", []):
+            if t == "missing":
+                counts["missing"] += 1
+            elif t == "weak":
+                counts["weak"] += 1
+    return counts
+
+
+def parse_targets(path):
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if not urlparse(line).scheme:
+                line = "https://" + line
+            yield line
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--targets", required=True, help="file with one URL per line")
+    p.add_argument("--output", default=os.path.join("report", "header_audit.md"))
+    args = p.parse_args()
+
+    baseline = load_baseline()
+    results = []
+    for url in parse_targets(args.targets):
+        ok, data, status = fetch_headers(url)
+        if not ok:
+            results.append({"url": url, "ok": False, "error": data})
+            continue
+        findings = evaluate_headers(data, baseline)
+        results.append({"url": url, "ok": True, "status": status, "findings": findings, "headers": data})
+
+    summary = aggregate_summary(results)
+    make_report(results, args.output, summary)
+
+
+if __name__ == "__main__":
+    main()
