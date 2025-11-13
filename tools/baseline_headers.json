@@ -1,0 +1,31 @@
+{
+"Strict-Transport-Security": {
+"required": true,
+"min_max_age": 31536000,
+"require_include_subdomains": true
+},
+"X-Frame-Options": {
+"required": true,
+"allowed_values": ["DENY", "SAMEORIGIN"]
+},
+"X-Content-Type-Options": {
+"required": true,
+"allowed_values": ["nosniff"]
+},
+"Referrer-Policy": {
+"required": true,
+"allowed_values": ["no-referrer", "no-referrer-when-downgrade", "strict-origin-when-cross-origin"]
+},
+"Content-Security-Policy": {
+"required": false,
+"note": "Highly recommended. Application-specific values expected."
+},
+"Permissions-Policy": {
+"required": false,
+"note": "Optional but recommended to restrict features (camera, geolocation, etc)."
+},
+"Set-Cookie": {
+"required_flags": ["HttpOnly", "Secure"],
+"require_samesite": true
+}
+}
