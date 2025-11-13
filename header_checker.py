@@ -368,7 +368,55 @@ class SecurityHeaderAnalyzer:
             score_emoji = "🔴" if security_score < 50 else "🟡" if security_score < 80 else "✅"
             f.write(f"## 🎯 Overall Security Score: {score_emoji} {security_score}/100\n\n")
             
+            # POSITIVE REINFORCEMENT - Phần khen ngợi
+            f.write("## 💪 Security Performance\n\n")
+            
+            if security_score >= 90:
+                f.write("### 🏆 **EXCELLENT WORK!**\n\n")
+                f.write("🎉 **Outstanding achievement!** Your security headers implementation is top-notch.\n\n")
+                f.write("**What you're doing right:**\n")
+                f.write("- ✅ **Comprehensive protection** - All critical security headers are properly configured\n")
+                f.write("- ✅ **Industry best practices** - Meets or exceeds security standards\n")
+                f.write("- ✅ **Proactive security** - Demonstrates strong security awareness\n")
+                f.write("- ✅ **Trust building** - Shows commitment to user safety and data protection\n\n")
+                f.write("**Maintenance Tips:**\n")
+                f.write("- Continue regular security header audits\n")
+                f.write("- Stay updated with new security header developments\n")
+                f.write("- Consider implementing advanced CSP policies\n\n")
+                
+            elif security_score >= 70:
+                f.write("### 🌟 **GREAT PROGRESS!**\n\n")
+                f.write("👍 **Solid security foundation!** You have most critical headers in place.\n\n")
+                f.write("**Strengths to celebrate:**\n")
+                f.write("- ✅ **Strong core protection** - Essential security headers are implemented\n")
+                f.write("- ✅ **Good security posture** - Better than industry average\n")
+                f.write("- ✅ **Risk awareness** - Understanding of security importance\n\n")
+                f.write("**Quick wins available:**\n")
+                f.write("- A few enhancements can bring you to excellent status\n")
+                f.write("- Focus on the recommended headers below\n\n")
+                
+            elif security_score >= 50:
+                f.write("### 📈 **GOOD START!**\n\n")
+                f.write("💪 **You're on the right track!** Basic security measures are in place.\n\n")
+                f.write("**Positive aspects:**\n")
+                f.write("- ✅ **Security awareness** - You're monitoring and improving\n")
+                f.write("- ✅ **Foundation laid** - Ready for significant improvements\n")
+                f.write("- ✅ **Growth potential** - Clear path to better security\n\n")
+                f.write("**Encouragement:**\n")
+                f.write("- Every improvement makes a real difference\n")
+                f.write("- Focus on high-impact changes first\n\n")
+                
+            else:
+                f.write("### 🎯 **OPPORTUNITY FOR GROWTH!**\n\n")
+                f.write("🔧 **Time to level up your security!** This is a great chance to significantly improve your security posture.\n\n")
+                f.write("**Positive mindset:**\n")
+                f.write("- ✅ **Awareness is the first step** - You're already ahead by running this scan\n")
+                f.write("- ✅ **Clear improvement path** - Specific actions identified below\n")
+                f.write("- ✅ **Quick security wins** - Many fixes are easy to implement\n")
+                f.write("- ✅ **Future-proofing** - Each improvement makes your application safer\n\n")
+            
             # Score Interpretation
+            f.write("## 📋 Score Interpretation\n\n")
             if security_score >= 90:
                 f.write("**Status**: ✅ Excellent - Strong security headers implementation\n\n")
             elif security_score >= 70:
@@ -384,6 +432,13 @@ class SecurityHeaderAnalyzer:
             if summary['successful'] > 0:
                 avg_issues_per_site = (summary['high_issues'] + summary['medium_issues'] + summary['low_issues']) / summary['successful']
                 f.write(f"- **Average Issues per Site**: {avg_issues_per_site:.1f}\n")
+            
+            # Positive stats highlighting
+            if summary['high_issues'] == 0:
+                f.write(f"- 🎉 **No Critical Issues** - Excellent job on high-priority security!\n")
+            if summary['successful'] == summary['total']:
+                f.write(f"- 🌐 **All Sites Reachable** - Great connectivity and availability!\n")
+            
             f.write("\n")
             
             # Detailed Findings
@@ -405,8 +460,15 @@ class SecurityHeaderAnalyzer:
                 
                 # Findings Summary với visual
                 if not result["findings"]:
-                    f.write("### ✅ **Excellent! No security issues found**\n\n")
-                    f.write("All required and recommended security headers are properly configured.\n\n")
+                    f.write("### 🏅 **PERFECT SCORE!**\n\n")
+                    f.write("🎊 **Outstanding security implementation!** This site demonstrates excellent security practices.\n\n")
+                    f.write("**Security Excellence Achieved:**\n")
+                    f.write("- ✅ All required security headers properly configured\n")
+                    f.write("- ✅ Recommended security headers implemented\n")
+                    f.write("- ✅ Protection against common web vulnerabilities\n")
+                    f.write("- ✅ Commitment to user safety and data protection\n\n")
+                    f.write("**Maintain this excellent standard!** 🚀\n\n")
+                    
                 else:
                     high_findings = [f for f in result["findings"] if f["severity"] == "high"]
                     medium_findings = [f for f in result["findings"] if f["severity"] == "medium"]
@@ -422,6 +484,20 @@ class SecurityHeaderAnalyzer:
                     site_emoji = "🔴" if site_score < 50 else "🟡" if site_score < 80 else "✅"
                     
                     f.write(f"### {site_emoji} Site Security Score: {site_score}/100\n\n")
+                    
+                    # Positive reinforcement per site
+                    if site_score >= 90:
+                        f.write("#### 🌟 **Site Security Excellence**\n\n")
+                        f.write("This site shows outstanding security header configuration! 🎉\n\n")
+                    elif site_score >= 70:
+                        f.write("#### 👍 **Solid Security Foundation**\n\n")
+                        f.write("Good security practices with room for some enhancements.\n\n")
+                    elif site_score >= 50:
+                        f.write("#### 💪 **Security Work in Progress**\n\n")
+                        f.write("Making progress toward better security - keep going! 📈\n\n")
+                    else:
+                        f.write("#### 🎯 **Security Improvement Opportunity**\n\n")
+                        f.write("Great potential for security enhancements identified below. 🔧\n\n")
                     
                     if high_findings:
                         f.write(f"**🔴 Critical Issues ({len(high_findings)})** - Immediate attention required\n")
@@ -457,9 +533,17 @@ class SecurityHeaderAnalyzer:
                 f.write("```\n")
                 f.write("</details>\n\n")
             
-            # Remediation Guide
+            # Remediation Guide với positive tone
             f.write("---\n\n")
-            f.write("## 🛠️ Remediation Guide\n\n")
+            f.write("## 🛠️ Security Improvement Guide\n\n")
+            
+            if security_score >= 70:
+                f.write("### 🎯 **Fine-Tuning Your Excellent Security**\n\n")
+                f.write("Even with great security, here are ways to make it even better:\n\n")
+            else:
+                f.write("### 🚀 **Path to Better Security**\n\n")
+                f.write("Follow these steps to significantly improve your security posture:\n\n")
+            
             f.write("### Quick Fixes for Common Issues:\n\n")
             
             remediation_guides = {
@@ -475,15 +559,24 @@ class SecurityHeaderAnalyzer:
             for header, guide in remediation_guides.items():
                 f.write(f"- **{header}**: {guide}\n")
             
-            f.write("\n### 📚 Additional Resources:\n")
+            f.write("\n### 📚 Learning Resources:\n")
             f.write("- [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/)\n")
             f.write("- [Mozilla Security Headers Guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers)\n")
             f.write("- [SecurityHeaders.com Scanner](https://securityheaders.com/)\n\n")
             
-            # Report Footer
+            # Motivational Footer
             f.write("---\n\n")
+            f.write("## 🌟 Keep Up the Great Work!\n\n")
+            
+            if security_score >= 80:
+                f.write("You're doing an amazing job with security! Continue monitoring and maintaining these high standards. 🏆\n\n")
+            elif security_score >= 60:
+                f.write("You're making excellent progress! Each improvement makes your application safer. 💪\n\n")
+            else:
+                f.write("Every security improvement counts! You're taking important steps toward better protection. 🚀\n\n")
+            
             f.write("**Report Generated by**: Security Header Analyzer v1.0  \n")
-            f.write("**Next Scan Recommendation**: Run weekly to monitor security header compliance\n")
+            f.write("**Next Scan Recommendation**: Run weekly to monitor and celebrate your security progress! 📅\n")
         
         print(f"Report generated: {output_path}")
 
