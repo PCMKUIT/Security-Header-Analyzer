@@ -2,7 +2,7 @@
   "Strict-Transport-Security": {
     "required": true,
     "min_max_age": 31536000,
-    "require_include_subdomains": true,
+    "require_include_subdomains": false,
     "description": "Prevents SSL stripping and ensures HTTPS"
   },
   "X-Frame-Options": {
@@ -17,7 +17,7 @@
   },
   "Referrer-Policy": {
     "required": true,
-    "allowed_values": ["no-referrer", "no-referrer-when-downgrade", "strict-origin-when-cross-origin"],
+    "allowed_values": ["no-referrer", "no-referrer-when-downgrade", "strict-origin-when-cross-origin", "strict-origin", "same-origin"],
     "description": "Controls referrer information in requests"
   },
   "Content-Security-Policy": {
@@ -32,8 +32,9 @@
   },
   "X-XSS-Protection": {
     "required": false,
-    "allowed_values": ["1; mode=block"],
-    "description": "Enables XSS protection in older browsers"
+    "recommended": false,
+    "allowed_values": ["1; mode=block", "0"],
+    "description": "Enables XSS protection in older browsers (deprecated in modern browsers)"
   },
   "Set-Cookie": {
     "required_flags": ["HttpOnly", "Secure"],
