@@ -1,2 +1,10 @@
+# Security Header Analyzer - Target URLs
+# Add one URL per line. Include http:// or https:// prefix.
+# Lines starting with # are ignored.
+
 https://example.com
-https://vn.gauthmath.com/solution/1812803996736581/C-u-2-Giao-th-c-HTTP-ch-y-u-c-s-d-ng-l-m-g-A-Truy-n-t-i-trang-web-B-K-t-n-i-c-c-
+https://httpbin.org/headers
+
+# Add your target URLs below:
+# https://your-website.com
+# https://api.yourservice.com
