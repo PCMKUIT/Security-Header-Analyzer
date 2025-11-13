@@ -1,21 +1,33 @@
-# Byte-compiled / caches
+# Byte-compiled / cached / optimized files
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
 
-
-# Virtualenv
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
 
-
-# Reports
-report/
-
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
+# Logs
+*.log
+logs/
 
-# Editor
-.vscode/
-.idea/
+# Reports (optional - you might want to keep them)
+# report/
