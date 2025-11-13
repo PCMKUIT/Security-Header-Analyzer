@@ -295,87 +295,6 @@ class SecurityHeaderAnalyzer:
             
         return result
 
-    def generate_report(self, results, output_path):
-        """Generate comprehensive Markdown report"""
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
-        
-        summary = self.aggregate_summary(results)
-        
-        with open(output_path, "w", encoding="utf-8") as f:
-            # Header
-            f.write("# Security Header Audit Report\n\n")
-            f.write(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"**Targets Scanned**: {summary['total']}\n\n")
-            
-            # Executive Summary
-            f.write("## Executive Summary\n\n")
-            f.write(f"- **Total URLs Scanned**: {summary['total']}\n")
-            f.write(f"- **Successfully Scanned**: {summary['successful']}\n")
-            f.write(f"- **Scan Errors**: {summary['errors']}\n")
-            f.write(f"- **High Severity Issues**: {summary['high_issues']}\n")
-            f.write(f"- **Medium Severity Issues**: {summary['medium_issues']}\n")
-            f.write(f"- **Low Severity Issues**: {summary['low_issues']}\n\n")
-            
-            # Security Score
-            security_score = self.calculate_security_score(summary)
-            f.write(f"## Overall Security Score: {security_score}/100\n\n")
-            
-            # Detailed Findings
-            f.write("## Detailed Findings\n\n")
-            
-            for result in results:
-                f.write(f"---\n\n")
-                f.write(f"### {result['url']}\n\n")
-                
-                if not result["success"]:
-                    f.write(f"**❌ Scan Failed**: {result['error']}\n\n")
-                    continue
-                
-                f.write(f"- **Status Code**: {result['status_code']}\n")
-                f.write(f"- **Final URL**: {result['final_url']}\n")
-                f.write(f"- **Response Time**: {result['response_time_ms']} ms\n")
-                f.write(f"- **Headers Found**: {result['headers_count']}\n\n")
-                
-                # Findings Summary
-                if not result["findings"]:
-                    f.write("**✅ No security issues found**\n\n")
-                else:
-                    high_findings = [f for f in result["findings"] if f["severity"] == "high"]
-                    medium_findings = [f for f in result["findings"] if f["severity"] == "medium"]
-                    low_findings = [f for f in result["findings"] if f["severity"] == "low"]
-                    
-                    if high_findings:
-                        f.write(f"**🔴 High Severity Issues**: {len(high_findings)}\n")
-                    if medium_findings:
-                        f.write(f"**🟡 Medium Severity Issues**: {len(medium_findings)}\n")
-                    if low_findings:
-                        f.write(f"("🔵 Low Severity Issues**: {len(low_findings)}\n")
-                    f.write("\n")
-                    
-                    # Detailed Findings Table
-                    f.write("| Severity | Header | Issue |\n")
-                    f.write("|----------|--------|-------|\n")
-                    for finding in result["findings"]:
-                        severity_icon = {
-                            "high": "🔴",
-                            "medium": "🟡", 
-                            "low": "🔵"
-                        }.get(finding["severity"], "⚪")
-                        
-                        f.write(f"| {severity_icon} {finding['severity'].title()} | `{finding['header']}` | {finding['message']} |\n")
-                    f.write("\n")
-                
-                # Headers Snapshot
-                f.write("<details>\n")
-                f.write("<summary>Response Headers</summary>\n\n")
-                f.write("```\n")
-                for header, value in result["headers"].items():
-                    f.write(f"{header}: {value}\n")
-                f.write("```\n")
-                f.write("</details>\n\n")
-        
-        print(f"Report generated: {output_path}")
-
     def aggregate_summary(self, results):
         """Aggregate scan results into summary statistics"""
         summary = {
@@ -421,6 +340,152 @@ class SecurityHeaderAnalyzer:
         final_score = max(0, base_score - penalty)
         
         return final_score
+
+    def generate_report(self, results, output_path):
+        """Generate comprehensive Markdown report"""
+        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        
+        summary = self.aggregate_summary(results)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            # Header
+            f.write("# Security Header Audit Report\n\n")
+            f.write(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"**Targets Scanned**: {summary['total']}\n")
+            f.write(f"**Baseline Used**: {os.path.basename(self.baseline_path)}\n\n")
+            
+            # Executive Summary
+            f.write("## 📊 Executive Summary\n\n")
+            f.write(f"- **Total URLs Scanned**: {summary['total']}\n")
+            f.write(f"- **✅ Successfully Scanned**: {summary['successful']}\n")
+            f.write(f"- **❌ Scan Errors**: {summary['errors']}\n")
+            f.write(f"- **🔴 High Severity Issues**: {summary['high_issues']}\n")
+            f.write(f"- **🟡 Medium Severity Issues**: {summary['medium_issues']}\n")
+            f.write(f"- **🔵 Low Severity Issues**: {summary['low_issues']}\n\n")
+            
+            # Security Score với visual indicator
+            security_score = self.calculate_security_score(summary)
+            score_emoji = "🔴" if security_score < 50 else "🟡" if security_score < 80 else "✅"
+            f.write(f"## 🎯 Overall Security Score: {score_emoji} {security_score}/100\n\n")
+            
+            # Score Interpretation
+            if security_score >= 90:
+                f.write("**Status**: ✅ Excellent - Strong security headers implementation\n\n")
+            elif security_score >= 70:
+                f.write("**Status**: 🟡 Good - Moderate security, some improvements needed\n\n")
+            elif security_score >= 50:
+                f.write("**Status**: 🟠 Fair - Basic security, significant improvements needed\n\n")
+            else:
+                f.write("**Status**: 🔴 Poor - Critical security issues require immediate attention\n\n")
+            
+            # Quick Stats
+            f.write("### 📈 Quick Statistics\n\n")
+            f.write(f"- **Success Rate**: {(summary['successful']/summary['total']*100):.1f}%\n")
+            if summary['successful'] > 0:
+                avg_issues_per_site = (summary['high_issues'] + summary['medium_issues'] + summary['low_issues']) / summary['successful']
+                f.write(f"- **Average Issues per Site**: {avg_issues_per_site:.1f}\n")
+            f.write("\n")
+            
+            # Detailed Findings
+            f.write("## 🔍 Detailed Findings\n\n")
+            
+            for i, result in enumerate(results, 1):
+                f.write(f"---\n\n")
+                f.write(f"### 🌐 {i}. {result['url']}\n\n")
+                
+                if not result["success"]:
+                    f.write(f"**❌ Scan Failed**: {result['error']}\n\n")
+                    continue
+                
+                # URL Info Box
+                f.write(f"**Status Code**: `{result['status_code']}` | ")
+                f.write(f"**Response Time**: `{result['response_time_ms']} ms` | ")
+                f.write(f"**Headers Found**: `{result['headers_count']}`\n\n")
+                f.write(f"**Final URL**: {result['final_url']}\n\n")
+                
+                # Findings Summary với visual
+                if not result["findings"]:
+                    f.write("### ✅ **Excellent! No security issues found**\n\n")
+                    f.write("All required and recommended security headers are properly configured.\n\n")
+                else:
+                    high_findings = [f for f in result["findings"] if f["severity"] == "high"]
+                    medium_findings = [f for f in result["findings"] if f["severity"] == "medium"]
+                    low_findings = [f for f in result["findings"] if f["severity"] == "low"]
+                    
+                    # Site-specific score
+                    site_penalty = (
+                        len(high_findings) * 10 +
+                        len(medium_findings) * 5 +
+                        len(low_findings) * 2
+                    )
+                    site_score = max(0, 100 - site_penalty)
+                    site_emoji = "🔴" if site_score < 50 else "🟡" if site_score < 80 else "✅"
+                    
+                    f.write(f"### {site_emoji} Site Security Score: {site_score}/100\n\n")
+                    
+                    if high_findings:
+                        f.write(f"**🔴 Critical Issues ({len(high_findings)})** - Immediate attention required\n")
+                    if medium_findings:
+                        f.write(f"**🟡 Important Issues ({len(medium_findings)})** - Should be addressed soon\n")
+                    if low_findings:
+                        f.write(f"**🔵 Recommendations ({len(low_findings)})** - Security enhancements\n")
+                    f.write("\n")
+                    
+                    # Detailed Findings Table với description
+                    f.write("#### 📋 Security Issues Details\n\n")
+                    f.write("| Severity | Header | Issue | Description |\n")
+                    f.write("|----------|--------|-------|-------------|\n")
+                    for finding in result["findings"]:
+                        severity_icon = {
+                            "high": "🔴",
+                            "medium": "🟡", 
+                            "low": "🔵"
+                        }.get(finding["severity"], "⚪")
+                        
+                        # Get description from baseline
+                        header_desc = self.baseline.get(finding["header"], {}).get("description", "Security header")
+                        
+                        f.write(f"| {severity_icon} **{finding['severity'].title()}** | `{finding['header']}` | {finding['message']} | {header_desc} |\n")
+                    f.write("\n")
+                
+                # Headers Snapshot
+                f.write("<details>\n")
+                f.write("<summary>📨 View Raw Response Headers</summary>\n\n")
+                f.write("```http\n")
+                for header, value in result["headers"].items():
+                    f.write(f"{header}: {value}\n")
+                f.write("```\n")
+                f.write("</details>\n\n")
+            
+            # Remediation Guide
+            f.write("---\n\n")
+            f.write("## 🛠️ Remediation Guide\n\n")
+            f.write("### Quick Fixes for Common Issues:\n\n")
+            
+            remediation_guides = {
+                "Strict-Transport-Security": "**Fix**: Add `Strict-Transport-Security: max-age=31536000; includeSubDomains`",
+                "X-Frame-Options": "**Fix**: Add `X-Frame-Options: DENY` or `X-Frame-Options: SAMEORIGIN`",
+                "X-Content-Type-Options": "**Fix**: Add `X-Content-Type-Options: nosniff`",
+                "Referrer-Policy": "**Fix**: Add `Referrer-Policy: strict-origin-when-cross-origin`",
+                "Content-Security-Policy": "**Recommend**: Implement CSP based on your application needs",
+                "Permissions-Policy": "**Recommend**: Add `Permissions-Policy` to restrict browser features",
+                "Set-Cookie": "**Fix**: Ensure cookies have `HttpOnly`, `Secure`, and `SameSite` flags"
+            }
+            
+            for header, guide in remediation_guides.items():
+                f.write(f"- **{header}**: {guide}\n")
+            
+            f.write("\n### 📚 Additional Resources:\n")
+            f.write("- [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/)\n")
+            f.write("- [Mozilla Security Headers Guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers)\n")
+            f.write("- [SecurityHeaders.com Scanner](https://securityheaders.com/)\n\n")
+            
+            # Report Footer
+            f.write("---\n\n")
+            f.write("**Report Generated by**: Security Header Analyzer v1.0  \n")
+            f.write("**Next Scan Recommendation**: Run weekly to monitor security header compliance\n")
+        
+        print(f"Report generated: {output_path}")
 
 
 def parse_targets(file_path):
