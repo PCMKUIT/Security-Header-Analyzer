@@ -580,6 +580,29 @@ class SecurityHeaderAnalyzer:
         
         print(f"Report generated: {output_path}")
 
+    def save_report_with_timestamp(self, results, base_output_path):
+        """Save report with timestamp for trend analysis"""
+        import datetime
+        
+        # Create timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Create reports directory if it doesn't exist
+        reports_dir = "reports"
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        # Generate filename with timestamp
+        filename = f"security_scan_{timestamp}.md"
+        output_path = os.path.join(reports_dir, filename)
+        
+        # Generate the report
+        self.generate_report(results, output_path)
+        
+        # Also save to the original path for immediate use
+        self.generate_report(results, base_output_path)
+        
+        print(f"Timestamped report saved: {output_path}")
+        return output_path
 
 def parse_targets(file_path):
     """Parse targets from file, handling various formats"""
@@ -696,7 +719,7 @@ Examples:
         results.append(result)
     
     # Generate report
-    analyzer.generate_report(results, args.output)
+    timestamped_report = analyzer.save_report_with_timestamp(results, args.output)
     
     # Print quick summary
     summary = analyzer.aggregate_summary(results)
