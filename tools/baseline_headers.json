@@ -1,31 +1,44 @@
 {
-"Strict-Transport-Security": {
-"required": true,
-"min_max_age": 31536000,
-"require_include_subdomains": true
-},
-"X-Frame-Options": {
-"required": true,
-"allowed_values": ["DENY", "SAMEORIGIN"]
-},
-"X-Content-Type-Options": {
-"required": true,
-"allowed_values": ["nosniff"]
-},
-"Referrer-Policy": {
-"required": true,
-"allowed_values": ["no-referrer", "no-referrer-when-downgrade", "strict-origin-when-cross-origin"]
-},
-"Content-Security-Policy": {
-"required": false,
-"note": "Highly recommended. Application-specific values expected."
-},
-"Permissions-Policy": {
-"required": false,
-"note": "Optional but recommended to restrict features (camera, geolocation, etc)."
-},
-"Set-Cookie": {
-"required_flags": ["HttpOnly", "Secure"],
-"require_samesite": true
-}
+  "Strict-Transport-Security": {
+    "required": true,
+    "min_max_age": 31536000,
+    "require_include_subdomains": true,
+    "description": "Prevents SSL stripping and ensures HTTPS"
+  },
+  "X-Frame-Options": {
+    "required": true,
+    "allowed_values": ["DENY", "SAMEORIGIN"],
+    "description": "Prevents clickjacking attacks"
+  },
+  "X-Content-Type-Options": {
+    "required": true,
+    "allowed_values": ["nosniff"],
+    "description": "Prevents MIME type sniffing"
+  },
+  "Referrer-Policy": {
+    "required": true,
+    "allowed_values": ["no-referrer", "no-referrer-when-downgrade", "strict-origin-when-cross-origin"],
+    "description": "Controls referrer information in requests"
+  },
+  "Content-Security-Policy": {
+    "required": false,
+    "recommended": true,
+    "description": "Prevents XSS and other code injection attacks"
+  },
+  "Permissions-Policy": {
+    "required": false,
+    "recommended": true,
+    "description": "Controls browser features and APIs"
+  },
+  "X-XSS-Protection": {
+    "required": false,
+    "allowed_values": ["1; mode=block"],
+    "description": "Enables XSS protection in older browsers"
+  },
+  "Set-Cookie": {
+    "required_flags": ["HttpOnly", "Secure"],
+    "require_samesite": true,
+    "allowed_samesite": ["Strict", "Lax"],
+    "description": "Ensures cookie security flags are set"
+  }
 }
