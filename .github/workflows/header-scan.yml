@@ -1,0 +1,60 @@
+name: Security Header Scan
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run weekly on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+
+jobs:
+  header-scan:
+    name: Security Header Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Create reports directory
+      run: mkdir -p report
+      
+    - name: Run security header scan
+      run: |
+        python header_checker.py \
+          --targets targets.txt \
+          --output report/header_audit.md \
+          --timeout 15 \
+          --retries 2
+      
+    - name: Upload scan report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-header-report
+        path: report/header_audit.md
+        retention-days: 30
+        
+    - name: Upload report to workflow summary
+      run: |
+        echo "## Security Header Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Scan completed on $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 **Report generated:** [header_audit.md](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f report/header_audit.md ]; then
+          echo "### Quick Summary" >> $GITHUB_STEP_SUMMARY
+          grep -A 10 "Executive Summary" report/header_audit.md | grep "-" >> $GITHUB_STEP_SUMMARY
+        fi
